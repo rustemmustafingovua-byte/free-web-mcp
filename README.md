@@ -109,6 +109,31 @@ export X402_GAS_KEY=0x…        # wallet that pays gas for collecting
 Clients pay the way the x402 standard says: request → 402 with the payment
 terms → sign → retry with the `PAYMENT-SIGNATURE` header.
 
+### Paying for the hosted service
+
+The hosted endpoint speaks x402. Two ways to pay, and **the server never spends
+your money and never needs gas of its own** in the first one:
+
+```bash
+# 1) клиент сам переводит USDC на адрес получателя (газ платит клиент)
+#    и повторяет запрос с хешем транзакции
+curl -s -X POST "$HOST/mcp/paid" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "X-PAYMENT-TX: 0x<tx hash>" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+
+# 2) или подписывает EIP-3009 transferWithAuthorization
+curl -s -X POST "$HOST/mcp/paid" \
+  -H "PAYMENT-SIGNATURE: <signed authorization>" \
+  ...
+```
+
+Payment address (Base): `0x8aC6a229f254980CCd3Dd35CF5E1B7c08880B40E`
+
+The 402 response contains the exact terms (`payTo`, `amount`, `asset`, `network`),
+so a client does not need to hardcode anything.
+
 ## Install
 
 ```bash

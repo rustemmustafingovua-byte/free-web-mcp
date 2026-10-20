@@ -80,3 +80,39 @@ test("free-тир: лимит запросов в час с одного IP и 4
     proc.kill()
   }
 })
+
+test("прямая оплата: без хеша транзакции — 402 с инструкцией", async () => {
+  const { spawn } = await import("node:child_process")
+  const port = 8933
+  const proc = spawn("node", ["bin/free-web-mcp.js", "serve", "--port", String(port)], {
+    env: { ...process.env, FREE_TIER_PER_HOUR: "0", X402_PRICE_USD: "0.001" },
+    stdio: "ignore",
+  })
+  for (let i = 0; i < 40; i++) {
+    await new Promise((r) => setTimeout(r, 200))
+    try {
+      if ((await fetch(`http://127.0.0.1:${port}/health`)).ok) break
+    } catch {}
+  }
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/mcp/paid`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "accept": "application/json, text/event-stream" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+    })
+    assert.equal(res.status, 402)
+    const body = await res.json()
+    assert.ok(Array.isArray(body.ways), "в ответе должны быть способы оплаты")
+    assert.ok(body.ways.some((w) => w.kind === "transfer-and-prove"), "нужен способ без газа у сервера")
+    assert.ok(body.ways.every((w) => w.payTo && w.amount), "в способе должны быть адрес и сумма")
+  } finally {
+    proc.kill()
+  }
+})
+
+test("прямая оплата: кривой хеш не проходит", async () => {
+  const { verifyDirectPayment } = await import("../src/x402.js")
+  const r = await verifyDirectPayment("0x1234", { priceUsd: 0.001 })
+  assert.equal(r.ok, false)
+  assert.match(r.reason, /malformed|hash/i)
+})

@@ -30,6 +30,44 @@ const TYPES = {
 
 const client = createPublicClient({ chain: base, transport: http() })
 
+/** keccak("Transfer(address,address,uint256)") — подпись события перевода ERC-20 */
+const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+
+/**
+ * Проверка прямой оплаты: клиент сам переводит USDC на кошелёк получателя
+ * и присылает хеш транзакции.
+ *
+ * Почему так: сбор через transferWithAuthorization требует газа у сервера,
+ * а здесь газ платит клиент (он всё равно хочет данные). Значит сервис
+ * работает при нулевом бюджете — важно, пока на счёте ноль.
+ */
+export async function verifyDirectPayment(txHash, { priceUsd, payTo = PAY_TO, asset = USDC_BASE } = {}) {
+  if (!/^0x[0-9a-f]{64}$/i.test(String(txHash ?? ""))) {
+    return { ok: false, reason: "missing or malformed transaction hash" }
+  }
+  try {
+    const receipt = await client.getTransactionReceipt({ hash: txHash })
+    if (receipt.status !== "success") return { ok: false, reason: "transaction failed" }
+    for (const log of receipt.logs) {
+      if (log.address.toLowerCase() !== asset.toLowerCase()) continue
+      if ((log.topics?.[0] ?? "").toLowerCase() !== TRANSFER_TOPIC) continue
+      const topics = log.topics ?? []
+      if (topics.length < 3) continue
+      const to = `0x${topics[2].slice(-40)}`.toLowerCase()
+      if (to !== payTo.toLowerCase()) continue
+      const value = BigInt(log.data)
+      const amountUsd = Number(value) / 1e6
+      if (amountUsd + 1e-9 < priceUsd) {
+        return { ok: false, reason: `paid ${amountUsd} USDC, need ${priceUsd}` }
+      }
+      return { ok: true, amountUsd, tx: txHash }
+    }
+    return { ok: false, reason: "no USDC transfer to the payee found" }
+  } catch (e) {
+    return { ok: false, reason: `could not read the transaction: ${e?.shortMessage ?? e?.message ?? e}` }
+  }
+}
+
 /** Decode the PAYMENT-SIGNATURE / SIGN-IN-WITH-X header into its parts. */
 export function decodePaymentHeader(raw) {
   if (!raw) return null
@@ -145,6 +183,28 @@ export function paymentRequired(priceUsd, { payTo = PAY_TO, asset = USDC_BASE } 
       "content-type": "application/json",
       "payment-required": Buffer.from(JSON.stringify(requirements)).toString("base64"),
     },
-    body: { error: { message: `payment required: ${priceUsd} USDC on Base`, type: "payment_required" } },
+    body: {
+      error: { message: `payment required: ${priceUsd} USDC on Base`, type: "payment_required" },
+      // Два способа оплаты. Первый не требует газа у сервера: клиент сам переводит
+      // USDC и присылает хеш транзакции — сервер только проверяет её в сети.
+      ways: [
+        {
+          kind: "transfer-and-prove",
+          note: "send USDC to payTo on Base, then repeat the request with header X-PAYMENT-TX: <tx hash>",
+          asset,
+          payTo,
+          amount,
+          network: "base",
+        },
+        {
+          kind: "eip3009-authorization",
+          note: "sign transferWithAuthorization and send it in the PAYMENT-SIGNATURE header",
+          asset,
+          payTo,
+          amount,
+          network: "base",
+        },
+      ],
+    },
   }
 }

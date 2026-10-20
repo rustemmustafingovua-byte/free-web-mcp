@@ -15,7 +15,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { read, search, wiki, hn, github, extract, feed, fetchWithFallback, SOURCES } from "../src/index.js"
-import { verifyPayment, paymentRequired, collectPayment } from "../src/x402.js"
+import { verifyPayment, paymentRequired, collectPayment, verifyDirectPayment } from "../src/x402.js"
 
 // --- CLI shell: --help / --version -------------------------------------------
 const HELP = "free-web-mcp — Web search and page reading for agents, with zero API credits.\n\nUSAGE\n  free-web-mcp                 run the MCP server on stdio\n  free-web-mcp serve           run an HTTP server (/mcp for MCP, /health for a status check)\n  free-web-mcp serve --price 0.001   charge 0.001 USDC per call on Base\n\nCOMMANDS / OPTIONS\n  serve          HTTP mode instead of the stdio MCP server\n  --port <n>     port for the HTTP server (default 8788)\n  --price <usd>  charge per call in USDC (x402, Base); the signature is verified\n\nEnvironment: JINA_API_KEY (optional, enables full web search), GITHUB_TOKEN (optional)\n\nMIT · https://github.com/rustemmustafingovua-byte"
@@ -45,6 +45,7 @@ function takeFreeTier(ip) {
   const hour = Math.floor(Date.now() / 3600_000)
   const row = freeTier.get(ip)
   if (!row || row.hour !== hour) {
+    if (FREE_TIER_PER_HOUR <= 0) return false
     freeTier.set(ip, { hour, count: 1 })
     return true
   }
@@ -263,19 +264,33 @@ async function main() {
         const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown"
         const freeAllowed = !paidPath && takeFreeTier(ip)
         if (!freeAllowed) {
-          const sig = req.headers["payment-signature"] || req.headers["sign-in-with-x"] || req.headers["x-payment"]
-          const verdict = await verifyPayment(sig, { priceUsd: price })
-          if (!verdict.ok) {
-            const required = paymentRequired(price)
-            res.writeHead(required.status, required.headers)
-            return res.end(JSON.stringify(required.body))
-          }
-          // деньги реально забираем: без этого оплата осталась бы на руках плательщика
-          const collected = await collectPayment(sig)
-          if (collected.ok) {
-            process.stderr.write(`[free-web-mcp] оплата ${price} USDC собрана, tx ${collected.tx}\n`)
+          // 1) клиент перевёл сам и прислал хеш — сервер только проверяет (газ платит клиент)
+          const txHash = req.headers["x-payment-tx"]
+          if (txHash) {
+            const direct = await verifyDirectPayment(txHash, { priceUsd: price })
+            if (direct.ok) {
+              process.stderr.write(`[free-web-mcp] оплата ${price} USDC получена, tx ${txHash}\n`)
+            } else {
+              const required = paymentRequired(price)
+              res.writeHead(required.status, required.headers)
+              return res.end(JSON.stringify({ ...required.body, reason: direct.reason }))
+            }
           } else {
-            process.stderr.write(`[free-web-mcp] оплата не собрана: ${collected.reason}\n`)
+            // 2) клиент подписал EIP-3009 (сервер собирает сам — нужен газ)
+            const sig = req.headers["payment-signature"] || req.headers["sign-in-with-x"] || req.headers["x-payment"]
+            const verdict = await verifyPayment(sig, { priceUsd: price })
+            if (!verdict.ok) {
+              const required = paymentRequired(price)
+              res.writeHead(required.status, required.headers)
+              return res.end(JSON.stringify(required.body))
+            }
+            // деньги реально забираем: без этого оплата осталась бы на руках плательщика
+            const collected = await collectPayment(sig)
+            if (collected.ok) {
+              process.stderr.write(`[free-web-mcp] оплата ${price} USDC собрана, tx ${collected.tx}\n`)
+            } else {
+              process.stderr.write(`[free-web-mcp] оплата не собрана: ${collected.reason}\n`)
+            }
           }
         }
       }

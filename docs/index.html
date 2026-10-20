@@ -1,63 +1,82 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>free-web-mcp — The web for agents, with zero credits</title>
-<meta name="description" content="r.jina.ai · Wikipedia · Hacker News · GitHub behind one MCP server. No key, no meter.">
+<title>free-web-mcp — Web search and page reading for AI agents, with zero API credits.</title>
+<meta name="description" content="Web search and page reading for AI agents, with zero API credits.">
 <meta property="og:title" content="free-web-mcp">
-<meta property="og:description" content="r.jina.ai · Wikipedia · Hacker News · GitHub behind one MCP server. No key, no meter.">
+<meta property="og:description" content="Web search and page reading for AI agents, with zero API credits.">
 <meta property="og:image" content="https://raw.githubusercontent.com/rustemmustafingovua-byte/free-web-mcp/main/docs/social-preview.png">
 <style>
-  :root{--accent:#2f81f7;--accent2:#1f6feb;--bg:#0a0c10;--fg:#e6edf3;--muted:#8b949e;--line:#21262d}
+  :root{--accent:#2f81f7;--bg:#0a0c10;--panel:#0f141a;--fg:#e6edf3;--muted:#8b949e;--line:#1d222a}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif}
-  .wrap{max-width:900px;margin:0 auto;padding:72px 28px 96px}
-  header{border-bottom:1px solid var(--line);padding-bottom:40px;margin-bottom:44px}
-  .badge{display:inline-flex;align-items:center;gap:10px;padding:7px 14px;border-radius:999px;
-         background:#2f81f718;border:1px solid #2f81f744;color:var(--accent);font-size:13.5px;font-weight:600;margin-bottom:22px}
-  h1{margin:0 0 12px;font-size:44px;letter-spacing:-.025em}
-  .tag{color:#c9d1d9;font-size:22px;margin:0 0 10px}
-  .sub{color:var(--muted);margin:0 0 26px;max-width:640px}
-  pre{background:#11161d;border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow:auto;font:13.5px/1.6 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace}
-  code{font-family:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;font-size:.93em}
-  p code,li code{background:#161b22;border:1px solid var(--line);padding:1.5px 6px;border-radius:6px}
-  h2{font-size:21px;margin:40px 0 12px;letter-spacing:-.01em}
-  a{color:var(--accent)}
-  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin:22px 0}
-  .card{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:#0f141a}
+  body{margin:0;background:radial-gradient(900px 500px at 10% -10%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%), var(--bg);
+       color:var(--fg);font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+  .wrap{max-width:920px;margin:0 auto;padding:64px 24px 100px}
+  .chip{display:inline-block;padding:6px 13px;border-radius:999px;background:color-mix(in srgb, var(--accent) 16%, transparent);
+        border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);color:var(--accent);font-size:13px;font-weight:600;margin-bottom:20px}
+  h1{font-size:clamp(32px,5vw,46px);letter-spacing:-.03em;line-height:1.08;margin:0 0 14px}
+  h2{font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:52px 0 16px}
+  p{color:#b6bec8;margin:0 0 14px}
+  .lede{font-size:19px;color:#c9d1d9;margin:0 0 20px}
+  .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .card{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--panel)}
   .card b{display:block;margin-bottom:5px}
-  .card span{color:var(--muted);font-size:14.5px}
-  table{width:100%;border-collapse:collapse;margin:18px 0;font-size:14.5px}
-  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line)}
-  th{color:var(--muted);font-weight:600}
-  .cta{display:inline-block;background:var(--accent);color:#07100a;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:8px 10px 0 0}
+  .card span{color:var(--muted);font-size:14px}
+  .row{display:grid;grid-template-columns:minmax(190px,auto) 1fr;gap:14px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+  .row code{background:#11161d;border:1px solid var(--line);padding:4px 9px;border-radius:7px;font-size:13.5px;white-space:pre-wrap}
+  .row span{color:#b6bec8;font-size:15px}
+  details{border:1px solid var(--line);border-radius:10px;padding:12px 16px;background:var(--panel);margin-bottom:8px}
+  summary{cursor:pointer;font-weight:600}
+  details p{margin:10px 0 2px}
+  ol{padding-left:20px;color:#b6bec8}
+  ol li{margin:6px 0}
+  .cta{display:inline-block;background:var(--accent);color:#06120a;font-weight:700;padding:11px 20px;border-radius:10px;text-decoration:none;margin:8px 10px 0 0}
   .cta.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
-  footer{margin-top:64px;padding-top:26px;border-top:1px solid var(--line);color:#6e7681;font-size:14px}
-</style></head>
-<body><div class="wrap">
-<header>
-  <span class="badge">free-web-mcp</span>
-  <h1>The web for agents, with zero credits</h1>
-  <p class="sub">r.jina.ai · Wikipedia · Hacker News · GitHub behind one MCP server. No key, no meter.</p>
-  <a class="cta" href="https://github.com/rustemmustafingovua-byte/free-web-mcp">View on GitHub</a>
-  <a class="cta ghost" href="https://github.com/rustemmustafingovua-byte/free-web-mcp/releases">Releases</a>
-</header>
+  footer{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:#6e7681;font-size:13.5px;display:flex;gap:16px;flex-wrap:wrap}
+</style></head><body><div class="wrap">
+<span class="chip">free-web-mcp</span>
+<h1>Web search and page reading for AI agents, with zero API credits.</h1>
+<p class="lede">Web search for agents is usually metered per call, which quietly decides whether an agent can browse at all. This server gives it the web for free: r.jina.ai renders any page into clean markdown, and Wikipedia, Hacker News and GitHub cover the rest.</p>
+<a class="cta" href="https://github.com/rustemmustafingovua-byte/free-web-mcp">View on GitHub</a>
+<a class="cta ghost" href="https://www.npmjs.com/package/free-web-mcp">npm</a>
+<a class="cta ghost" href="https://github.com/rustemmustafingovua-byte/free-web-mcp#readme">README</a>
 
-<h2>Install</h2>
-<pre><code>npm i -g free-web-mcp</code></pre>
-
-<h2>Why it exists</h2>
+<h2>What it does</h2>
 <div class="grid">
-  <div class="card"><b>Built for agents</b><span>Every call is a tool call: no account, no key, no meter.</span></div>
-  <div class="card"><b>Honest limits</b><span>RPM caps, daily pools and weights are modelled, not guessed.</span></div>
-  <div class="card"><b>Open source</b><span>MIT. Fork it, self-host it, price it yourself.</span></div>
+<div class="card"><b>Any page as markdown</b><span>r.jina.ai handles JavaScript pages, paywalls-free reads and long documents.</span></div>
+<div class="card"><b>Wikipedia</b><span>Summaries and search in Russian or English.</span></div>
+<div class="card"><b>Hacker News</b><span>Algolia search with points, authors and links.</span></div>
+<div class="card"><b>GitHub</b><span>Repositories, code and issues, with the token when it is present.</span></div>
+<div class="card"><b>Full web search</b><span>Adds Jina Search when a free Jina key is set.</span></div>
+<div class="card"><b>Charge per call</b><span>--price 0.001 serves it over x402: USDC on Base, signature verified.</span></div>
 </div>
 
-<h2>Documentation</h2>
-<table>
-  <tr><td>README</td><td>install, usage and the full provider table</td></tr>
-  <tr><td>Issues</td><td>bounty-eligible, anyone can fund them</td></tr>
-  <tr><td>Releases</td><td>changelog and npm publishing</td></tr>
-</table>
+<h2>Usage</h2>
+<div class="row"><code>As an MCP server</code><span>free-web-mcp</span></div>
+<div class="row"><code>Over HTTP</code><span>free-web-mcp serve --port 8788</span></div>
+<div class="row"><code>As a paid endpoint</code><span>free-web-mcp serve --price 0.001</span></div>
+<div class="row"><code>In OpenCode</code><span>{ "mcp": { "free-web": { "type": "local", "command": ["free-web-mcp"], "enabled": true } } }</span></div>
 
-<footer>free-web-mcp · MIT · <a href="https://github.com/rustemmustafingovua-byte/free-web-mcp">source</a> · USDC on Base: <code>0x8aC6a229f254980CCd3Dd35CF5E1B7c08880B40E</code></footer>
+<h2>How it works</h2>
+<ol>
+  <li>The stdio server speaks MCP; the HTTP server exposes the same operations as JSON.</li>
+  <li>A paid instance answers 402 with the x402 terms and verifies the EIP-3009 signature before serving.</li>
+  <li>Results from the web are untrusted data, never instructions.</li>
+</ol>
+
+<h2>Questions</h2>
+(rows) =>
+    rows
+      .map(
+        ([q, a]) =>
+          `<details><summary>${q}</summary><p>${a}</p></details>`,
+      )
+      .join("\n")
+
+<footer>
+  <span>free-web-mcp · MIT</span>
+  <a href="https://github.com/rustemmustafingovua-byte/free-web-mcp">source</a>
+  <a href="https://github.com/rustemmustafingovua-byte/free-web-mcp/issues">issues</a>
+  <span>USDC on Base: <code>0x8aC6a229f254980CCd3Dd35CF5E1B7c08880B40E</code></span>
+</footer>
 </div></body></html>

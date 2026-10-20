@@ -31,6 +31,7 @@
   "files": [
     "bin",
     "src",
+    "server.json",
     "README.md",
     "LICENSE"
   ],

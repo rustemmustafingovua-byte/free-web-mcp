@@ -1,0 +1,52 @@
+{
+  "name": "free-web-mcp",
+  "version": "0.1.0",
+  "description": "Web search and page reading for AI agents with zero API credits — r.jina.ai, Wikipedia, Hacker News and GitHub behind one MCP server.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "free-web-mcp": "bin/free-web-mcp.js",
+    "fwm": "bin/free-web-mcp.js"
+  },
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "web-search",
+    "free",
+    "opencode",
+    "claude-code",
+    "agents",
+    "no-api-key",
+    "wikipedia",
+    "hacker-news",
+    "github"
+  ],
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/",
+    "lint": "node --check src/index.js && node --check bin/free-web-mcp.js",
+    "serve": "node bin/free-web-mcp.js serve"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rustemmustafingovua-byte/free-web-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/rustemmustafingovua-byte/free-web-mcp/issues"
+  },
+  "homepage": "https://github.com/rustemmustafingovua-byte/free-web-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.1"
+  }
+}

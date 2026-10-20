@@ -35,30 +35,18 @@ Most "web search for agents" tools bill per call. For an agent that runs dozens 
 ## Install
 
 ```bash
-npm install -g free-web-mcp
+# tarball из релиза: без токена и без npm-логина
+npm i -g https://github.com/rustemmustafingovua-byte/free-web-mcp/releases/download/v0.1.0/free-web-mcp-0.1.0.tgz
 ```
 
-### OpenCode
-
-```jsonc
-// ~/.config/opencode/opencode.jsonc
-{
-  "mcp": {
-    "free-web": {
-      "type": "local",
-      "command": ["free-web-mcp"],
-      "enabled": true
-    }
-  }
-}
-```
-
-### Claude Code / Cursor / anything MCP
+<details>
+<summary>Через GitHub Packages</summary>
 
 ```bash
-claude mcp add --transport stdio free-web -- free-web-mcp
+npm i -g @rustemmustafingovua-byte/free-web-mcp --registry=https://npm.pkg.github.com
 ```
 
+</details>
 ## How it works
 
 ```mermaid

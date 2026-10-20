@@ -123,6 +123,26 @@ https://c41d1779574faa.lhr.life
 - Search results are leads, not evidence: read the page before citing it.
 - `r.jina.ai` is the backbone for `read`; it renders JavaScript pages for you.
 
+## CLI
+
+```
+free-web-mcp — Web search and page reading for agents, with zero API credits.
+
+USAGE
+  free-web-mcp                 run the MCP server on stdio
+  free-web-mcp serve           run an HTTP server
+  free-web-mcp serve --price 0.001   charge 0.001 USDC per call on Base
+
+COMMANDS / OPTIONS
+  serve          HTTP mode instead of the stdio MCP server
+  --port <n>     port for the HTTP server (default 8788)
+  --price <usd>  charge per call in USDC (x402, Base); the signature is verified
+
+Environment: JINA_API_KEY (optional, enables full web search), GITHUB_TOKEN (optional)
+
+MIT · https://github.com/rustemmustafingovua-byte
+```
+
 ## Part of a portfolio
 
 | Project | What it does |

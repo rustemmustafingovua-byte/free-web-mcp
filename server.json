@@ -3,7 +3,7 @@
   "name": "io.github.rustemmustafingovua-byte/free-web-mcp",
   "description": "Web search and page reading for AI agents with zero API credits",
   "title": "free-web-mcp",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "websiteUrl": "https://rustemmustafingovua-byte.github.io/free-web-mcp/",
   "repository": {
     "url": "https://github.com/rustemmustafingovua-byte/free-web-mcp",
@@ -12,7 +12,7 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://2b9e110fe5bb56.lhr.life/mcp"
+      "url": "https://d925b24c18e682.lhr.life/mcp"
     }
   ]
 }

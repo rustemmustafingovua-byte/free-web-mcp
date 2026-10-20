@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 /**
- * free-web-mcp — MCP server (stdio) + optional HTTP mode.
+ * free-web-mcp — MCP server (stdio) + HTTP mode with a real streamable-HTTP MCP endpoint.
  *
- *   free-web-mcp            run the MCP server on stdio (for OpenCode / Claude Code)
- *   free-web-mcp serve      run an HTTP server (add --price 0.001 for x402 per call)
+ *   free-web-mcp                 run the MCP server on stdio (for OpenCode / Claude Code)
+ *   free-web-mcp serve           run an HTTP server: /mcp (MCP) + /health + a plain JSON API
+ *   free-web-mcp serve --price 0.001   charge 0.001 USDC per call on Base (x402, signature verified)
  */
 import { createServer } from "node:http"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js"
 import { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import {
   CallToolRequestSchema,
@@ -16,8 +18,8 @@ import { read, search, wiki, hn, github, SOURCES } from "../src/index.js"
 import { verifyPayment, paymentRequired } from "../src/x402.js"
 
 // --- CLI shell: --help / --version -------------------------------------------
-const HELP = "free-web-mcp — Web search and page reading for agents, with zero API credits.\n\nUSAGE\n  free-web-mcp                 run the MCP server on stdio\n  free-web-mcp serve           run an HTTP server\n  free-web-mcp serve --price 0.001   charge 0.001 USDC per call on Base\n\nCOMMANDS / OPTIONS\n  serve          HTTP mode instead of the stdio MCP server\n  --port <n>     port for the HTTP server (default 8788)\n  --price <usd>  charge per call in USDC (x402, Base); the signature is verified\n\nEnvironment: JINA_API_KEY (optional, enables full web search), GITHUB_TOKEN (optional)\n\nMIT · https://github.com/rustemmustafingovua-byte"
-const VERSION = "0.1.0"
+const HELP = "free-web-mcp — Web search and page reading for agents, with zero API credits.\n\nUSAGE\n  free-web-mcp                 run the MCP server on stdio\n  free-web-mcp serve           run an HTTP server (/mcp for MCP, /health for a status check)\n  free-web-mcp serve --price 0.001   charge 0.001 USDC per call on Base\n\nCOMMANDS / OPTIONS\n  serve          HTTP mode instead of the stdio MCP server\n  --port <n>     port for the HTTP server (default 8788)\n  --price <usd>  charge per call in USDC (x402, Base); the signature is verified\n\nEnvironment: JINA_API_KEY (optional, enables full web search), GITHUB_TOKEN (optional)\n\nMIT · https://github.com/rustemmustafingovua-byte"
+const VERSION = "0.2.0"
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(HELP)
   process.exit(0)
@@ -26,7 +28,6 @@ if (process.argv.includes("--version") || process.argv.includes("-V")) {
   console.log(VERSION)
   process.exit(0)
 }
-
 
 const jinaKey = process.env.JINA_API_KEY || ""
 const githubToken = process.env.GITHUB_TOKEN || ""
@@ -92,39 +93,32 @@ const tools = [
   },
 ]
 
-const server = new Server(
-  { name: "free-web-mcp", version: "0.1.0" },
-  { capabilities: { tools: {} } },
-)
+const okText = (t) => ({ content: [{ type: "text", text: t }] })
+const failText = (t) => ({ content: [{ type: "text", text: t }], isError: true })
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }))
-
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params
-  const a = args || {}
-  const ok = (t) => ({ content: [{ type: "text", text: t }] })
-  const fail = (t) => ({ content: [{ type: "text", text: t }], isError: true })
+/** Один вызов инструмента — общий для stdio и HTTP. */
+async function callTool(name, a = {}) {
   try {
     switch (name) {
       case "free-web-read": {
         const r = await read(a.url, { maxChars: a.max_chars ?? 12000 })
-        return ok(`[${r.url}]\n\n${r.markdown}`)
+        return okText(`[${r.url}]\n\n${r.markdown}`)
       }
       case "free-web-search": {
-        const r = await search(a.query, {
+        const r = await search(a.query ?? "", {
           source: a.source,
           limit: a.limit ?? 5,
           jinaKey,
           githubToken,
         })
-        return ok(JSON.stringify(r, null, 2))
+        return okText(JSON.stringify(r, null, 2))
       }
       case "free-wiki":
-        return ok(JSON.stringify(await wiki(a.query, { lang: a.lang ?? "ru" }), null, 2))
+        return okText(JSON.stringify(await wiki(a.query, { lang: a.lang ?? "ru" }), null, 2))
       case "free-hn":
-        return ok(JSON.stringify(await hn(a.query, { limit: a.limit ?? 5 }), null, 2))
+        return okText(JSON.stringify(await hn(a.query, { limit: a.limit ?? 5 }), null, 2))
       case "free-github":
-        return ok(
+        return okText(
           JSON.stringify(
             await github(a.query, { kind: a.kind ?? "repositories", limit: a.limit ?? 5, token: githubToken }),
             null,
@@ -132,12 +126,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ),
         )
       default:
-        return fail(`unknown tool: ${name}`)
+        return failText(`unknown tool: ${name}`)
     }
   } catch (e) {
-    return fail(`[free-web-mcp] ${e?.message ?? e}`)
+    return failText(`[free-web-mcp] ${e?.message ?? e}`)
   }
-})
+}
+
+/** Новый MCP-сервер. В HTTP-режиме создаётся на каждый запрос (stateless). */
+function createMcpServer() {
+  const s = new Server(
+    { name: "free-web-mcp", version: VERSION },
+    { capabilities: { tools: {} } },
+  )
+  s.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }))
+  s.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params
+    return callTool(name, args || {})
+  })
+  return s
+}
 
 async function main() {
   const argv = process.argv.slice(2)
@@ -147,24 +155,58 @@ async function main() {
     const port = Number(argv[argv.indexOf("--port") + 1] || 8788)
     const http = createServer(async (req, res) => {
       res.setHeader("Access-Control-Allow-Origin", "*")
-      res.setHeader("Access-Control-Allow-Headers", "content-type")
+      res.setHeader("Access-Control-Allow-Headers", "content-type, mcp-protocol-version, accept")
+      res.setHeader("Access-Control-Expose-Headers", "mcp-session-id")
       if (req.method === "OPTIONS") return res.writeHead(204).end()
       if (req.method === "GET" && req.url === "/health") {
         res.writeHead(200, { "Content-Type": "application/json" })
-        return res.end(JSON.stringify({ ok: true, price, sources: SOURCES }))
+        return res.end(JSON.stringify({ ok: true, price, sources: SOURCES, version: VERSION }))
       }
+
       const chunks = []
       for await (const c of req) chunks.push(c)
-      const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString()) : {}
+      const raw = Buffer.concat(chunks).toString()
+      let body = {}
+      if (raw) {
+        try {
+          body = JSON.parse(raw)
+        } catch {
+          body = {}
+        }
+      }
+
       if (price > 0) {
-        const raw = req.headers["payment-signature"] || req.headers["sign-in-with-x"] || req.headers["x-payment"]
-        const verdict = await verifyPayment(raw, { priceUsd: price })
+        const sig = req.headers["payment-signature"] || req.headers["sign-in-with-x"] || req.headers["x-payment"]
+        const verdict = await verifyPayment(sig, { priceUsd: price })
         if (!verdict.ok) {
           const required = paymentRequired(price)
           res.writeHead(required.status, required.headers)
           return res.end(JSON.stringify(required.body))
         }
       }
+
+      // настоящий MCP по streamable HTTP
+      const path = (req.url || "/").split("?")[0]
+      if (path === "/mcp") {
+        const server = createMcpServer()
+        const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
+        res.on("close", () => {
+          transport.close().catch(() => {})
+          server.close().catch(() => {})
+        })
+        try {
+          await server.connect(transport)
+          await transport.handleRequest(req, res, body)
+        } catch (e) {
+          if (!res.headersSent) {
+            res.writeHead(500, { "Content-Type": "application/json" })
+            res.end(JSON.stringify({ error: String(e?.message ?? e) }))
+          }
+        }
+        return
+      }
+
+      // простой JSON API (совместимость с прежним /)
       try {
         const out = body.url
           ? await read(body.url, { maxChars: body.max_chars ?? 12000 })
@@ -177,16 +219,18 @@ async function main() {
       }
     })
     http.listen(port, () => {
-      process.stderr.write(`[free-web-mcp] http server on :${port} (price ${price} USDC/call)\n`)
+      process.stderr.write(`[free-web-mcp] http server on :${port} (mcp at /mcp, price ${price} USDC/call)\n`)
     })
     return
   }
+
+  const server = createMcpServer()
   const transport = new StdioServerTransport()
   await server.connect(transport)
   process.stderr.write(`[free-web-mcp] MCP server ready (jina=${jinaKey ? "yes" : "no"})\n`)
 }
 
 main().catch((e) => {
-  console.error(e)
+  process.stderr.write(`[free-web-mcp] fatal: ${e?.stack ?? e}\n`)
   process.exit(1)
 })

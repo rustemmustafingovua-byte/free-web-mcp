@@ -113,6 +113,16 @@ curl -s localhost:8788 -X POST -d '{"query":"opencode"}' -H 'content-type: appli
 | [`opencode-free-stack`](https://github.com/rustemmustafingovua-byte/opencode-free-stack) | route to free models, fall back automatically |
 | [`free-web-mcp`](https://github.com/rustemmustafingovua-byte/free-web-mcp) | web search and page reading for agents, zero credits |
 | [`agent-x402`](https://github.com/rustemmustafingovua-byte/agent-x402) | pay per API call in USDC with a spend policy |
+| [`mcp-doctor`](https://github.com/rustemmustafingovua-byte/mcp-doctor) | check that MCP servers work, and say why they do not |
+| [`mcp-proxy`](https://github.com/rustemmustafingovua-byte/mcp-proxy) | one endpoint, many MCP servers, with keys and limits |
+| [`tool-schema-lint`](https://github.com/rustemmustafingovua-byte/tool-schema-lint) | lint MCP tool schemas before agents misuse them |
+| [`prompt-budget`](https://github.com/rustemmustafingovua-byte/prompt-budget) | what does your system prompt cost per request? |
+| [`agent-cost-guard`](https://github.com/rustemmustafingovua-byte/agent-cost-guard) | a budget in front of any OpenAI-compatible endpoint |
+| [`opencode-doctor`](https://github.com/rustemmustafingovua-byte/opencode-doctor) | audit an OpenCode install in one command |
+| [`free-tier-tracker`](https://github.com/rustemmustafingovua-byte/free-tier-tracker) | know your free quota before it runs out |
+| [`x402-priceboard`](https://github.com/rustemmustafingovua-byte/x402-priceboard) | the price list of x402 endpoints, without paying |
+| [`prompt-injection-guard`](https://github.com/rustemmustafingovua-byte/prompt-injection-guard) | find instructions hidden in files the agent reads itself |
+| [`readme-doctor`](https://github.com/rustemmustafingovua-byte/readme-doctor) | why nobody uses your repository — checked in one command |
 
 ## Donate
 

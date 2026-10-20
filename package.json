@@ -9,7 +9,8 @@
     "fwm": "bin/free-web-mcp.js"
   },
   "exports": {
-    ".": "./src/index.js"
+    ".": "./src/index.js",
+    "./x402": "./src/x402.js"
   },
   "engines": {
     "node": ">=20"
@@ -47,6 +48,7 @@
   },
   "homepage": "https://github.com/rustemmustafingovua-byte/free-web-mcp#readme",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.1"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "viem": "^2.57.0"
   }
 }

@@ -5,7 +5,7 @@
  *   free-web-mcp            run the MCP server on stdio (for OpenCode / Claude Code)
  *   free-web-mcp serve      run an HTTP server (add --price 0.001 for x402 per call)
  */
-import { createServer } from "@modelcontextprotocol/sdk/server/index.js"
+import { createServer } from "node:http"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { Server } from "@modelcontextprotocol/sdk/server/index.js"
 import {
@@ -13,6 +13,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { read, search, wiki, hn, github, SOURCES } from "../src/index.js"
+import { verifyPayment, paymentRequired } from "../src/x402.js"
 
 const jinaKey = process.env.JINA_API_KEY || ""
 const githubToken = process.env.GITHUB_TOKEN || ""
@@ -142,6 +143,15 @@ async function main() {
       const chunks = []
       for await (const c of req) chunks.push(c)
       const body = chunks.length ? JSON.parse(Buffer.concat(chunks).toString()) : {}
+      if (price > 0) {
+        const raw = req.headers["payment-signature"] || req.headers["sign-in-with-x"] || req.headers["x-payment"]
+        const verdict = await verifyPayment(raw, { priceUsd: price })
+        if (!verdict.ok) {
+          const required = paymentRequired(price)
+          res.writeHead(required.status, required.headers)
+          return res.end(JSON.stringify(required.body))
+        }
+      }
       try {
         const out = body.url
           ? await read(body.url, { maxChars: body.max_chars ?? 12000 })

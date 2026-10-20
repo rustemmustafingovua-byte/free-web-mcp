@@ -129,3 +129,5 @@ export async function search(query, opts = {}) {
 }
 
 export const version = "0.1.0"
+
+export { verifyPayment, paymentRequired, decodePaymentHeader, PAY_TO, USDC_BASE } from "./x402.js"

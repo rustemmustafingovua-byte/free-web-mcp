@@ -1,7 +1,7 @@
 {
   "name": "free-web-mcp",
   "version": "0.1.0",
-  "description": "Web search and page reading for AI agents with zero API credits — r.jina.ai, Wikipedia, Hacker News and GitHub behind one MCP server.",
+  "description": "Web search and page reading for AI agents with zero API credits \u2014 r.jina.ai, Wikipedia, Hacker News and GitHub behind one MCP server.",
   "type": "module",
   "license": "MIT",
   "bin": {
@@ -34,7 +34,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test test/*.test.js",
     "lint": "node --check src/index.js && node --check bin/free-web-mcp.js",
     "serve": "node bin/free-web-mcp.js serve"
   },

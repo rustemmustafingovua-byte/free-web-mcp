@@ -6,11 +6,16 @@
  * We verify the signature, the amount, the payee and the time window before
  * serving anything.
  */
-import { createPublicClient, http, verifyTypedData, erc20Abi } from "viem"
+import { createPublicClient, createWalletClient, http, verifyTypedData, erc20Abi, parseAbi } from "viem"
 import { base } from "viem/chains"
 
 export const USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-export const PAY_TO = "0x2670b922ef37c7df47158725c0cc407b5382293f"
+/** Куда платежи. По умолчанию — кошелёк агента; переопределяется переменной окружения. */
+export const PAY_TO = process.env.X402_PAY_TO || "0x8aC6a229f254980CCd3Dd35CF5E1B7c08880B40E"
+
+const transferWithAuthorizationAbi = parseAbi([
+  "function transferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce,uint8 v,bytes32 r,bytes32 s)",
+])
 
 const TYPES = {
   TransferWithAuthorization: [
@@ -79,6 +84,42 @@ export async function verifyPayment(raw, { priceUsd, payTo = PAY_TO } = {}) {
     return { ok: false, reason: `signature check failed: ${err?.message ?? err}` }
   }
   return { ok: true, amountUsd, from: a.from }
+}
+
+/**
+ * Забрать деньги: отправить подписанный EIP-3009 transferWithAuthorization.
+ *
+ * Проверка подписи — это только половина: без отправки транзакции USDC
+ * так и остаются у плательщика. Здесь мы реально забираем оплату на кошелёк
+ * получателя (нужен небольшой запас ETH на газ).
+ *
+ * @returns {Promise<{ok: boolean, tx?: string, reason?: string}>}
+ */
+export async function collectPayment(raw, { payTo = PAY_TO, privateKey } = {}) {
+  const payment = decodePaymentHeader(raw)
+  if (!payment) return { ok: false, reason: "missing or malformed payment header" }
+  const a = payment.authorization
+  const sig = payment.signature
+  if (!/^0x[0-9a-f]{130}$/i.test(sig)) return { ok: false, reason: "malformed signature" }
+  const r = "0x" + sig.slice(2, 66)
+  const s = "0x" + sig.slice(66, 130)
+  const v = Number.parseInt(sig.slice(130, 132), 16)
+  try {
+    const key = privateKey ?? process.env.X402_GAS_KEY
+    if (!key) return { ok: false, reason: "no gas key configured (X402_GAS_KEY)" }
+    const wallet = createWalletClient({ account: key, chain: base, transport: http() })
+    const hash = await wallet.writeContract({
+      address: USDC_BASE,
+      abi: transferWithAuthorizationAbi,
+      functionName: "transferWithAuthorization",
+      args: [a.from, payTo, BigInt(a.value), BigInt(a.validAfter), BigInt(a.validBefore), a.nonce, v, r, s],
+      chain: base,
+      account: key,
+    })
+    return { ok: true, tx: hash }
+  } catch (e) {
+    return { ok: false, reason: e?.shortMessage ?? e?.message ?? String(e) }
+  }
 }
 
 /** The 402 a client should receive, with the accepted payment options. */

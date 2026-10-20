@@ -15,7 +15,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { read, search, wiki, hn, github, extract, feed, fetchWithFallback, SOURCES } from "../src/index.js"
-import { verifyPayment, paymentRequired } from "../src/x402.js"
+import { verifyPayment, paymentRequired, collectPayment } from "../src/x402.js"
 
 // --- CLI shell: --help / --version -------------------------------------------
 const HELP = "free-web-mcp — Web search and page reading for agents, with zero API credits.\n\nUSAGE\n  free-web-mcp                 run the MCP server on stdio\n  free-web-mcp serve           run an HTTP server (/mcp for MCP, /health for a status check)\n  free-web-mcp serve --price 0.001   charge 0.001 USDC per call on Base\n\nCOMMANDS / OPTIONS\n  serve          HTTP mode instead of the stdio MCP server\n  --port <n>     port for the HTTP server (default 8788)\n  --price <usd>  charge per call in USDC (x402, Base); the signature is verified\n\nEnvironment: JINA_API_KEY (optional, enables full web search), GITHUB_TOKEN (optional)\n\nMIT · https://github.com/rustemmustafingovua-byte"
@@ -233,6 +233,13 @@ async function main() {
           const required = paymentRequired(price)
           res.writeHead(required.status, required.headers)
           return res.end(JSON.stringify(required.body))
+        }
+        // деньги реально забираем: без этого оплата осталась бы на руках плательщика
+        const collected = await collectPayment(sig)
+        if (collected.ok) {
+          process.stderr.write(`[free-web-mcp] оплата ${price} USDC собрана, tx ${collected.tx}\n`)
+        } else {
+          process.stderr.write(`[free-web-mcp] оплата не собрана: ${collected.reason}\n`)
         }
       }
 

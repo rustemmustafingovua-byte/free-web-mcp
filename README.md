@@ -69,7 +69,7 @@ npm i -g https://github.com/rustemmustafingovua-byte/free-web-mcp/releases/downl
 ```
 
 <details>
-<summary>Через GitHub Packages</summary>
+<summary>Через GitHub Packages (нужен токен со scope read:packages)</summary>
 
 ```bash
 npm i -g @rustemmustafingovua-byte/free-web-mcp --registry=https://npm.pkg.github.com

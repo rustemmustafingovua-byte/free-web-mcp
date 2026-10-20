@@ -61,6 +61,21 @@ curl -s -X POST https://2b9e110fe5bb56.lhr.life/mcp \
 
 Health check: `https://2b9e110fe5bb56.lhr.life/health`
 
+### Getting past protection screens (v0.4.0)
+
+`free-web-fetch` reads a page that sits behind a Cloudflare check or a captcha.
+It tries, in order: a direct request → a local FlareSolverr → a paid solver
+(only for domains on your allowlist) → a text-render fallback. The answer says
+which path worked.
+
+```bash
+export FLARESOLVERR_URL=http://127.0.0.1:8191     # optional, self-hosted
+export CAPSOLVER_KEY=…                            # optional, paid
+export FREE_WEB_ALLOWLIST=example.com            # who the paid path may touch
+```
+
+Full survey of the options and the policy: [docs/CAPTCHA.md](docs/CAPTCHA.md).
+
 ### Two more tools (v0.3.0)
 
 | Tool | What it gives |

@@ -14,12 +14,12 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
-import { read, search, wiki, hn, github, extract, feed, SOURCES } from "../src/index.js"
+import { read, search, wiki, hn, github, extract, feed, fetchWithFallback, SOURCES } from "../src/index.js"
 import { verifyPayment, paymentRequired } from "../src/x402.js"
 
 // --- CLI shell: --help / --version -------------------------------------------
 const HELP = "free-web-mcp — Web search and page reading for agents, with zero API credits.\n\nUSAGE\n  free-web-mcp                 run the MCP server on stdio\n  free-web-mcp serve           run an HTTP server (/mcp for MCP, /health for a status check)\n  free-web-mcp serve --price 0.001   charge 0.001 USDC per call on Base\n\nCOMMANDS / OPTIONS\n  serve          HTTP mode instead of the stdio MCP server\n  --port <n>     port for the HTTP server (default 8788)\n  --price <usd>  charge per call in USDC (x402, Base); the signature is verified\n\nEnvironment: JINA_API_KEY (optional, enables full web search), GITHUB_TOKEN (optional)\n\nMIT · https://github.com/rustemmustafingovua-byte"
-const VERSION = "0.3.0"
+const VERSION = "0.4.0"
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(HELP)
   process.exit(0)
@@ -76,6 +76,19 @@ const tools = [
       type: "object",
       properties: { query: { type: "string" }, limit: { type: "number" } },
       required: ["query"],
+    },
+  },
+  {
+    name: "free-web-fetch",
+    description:
+      "Fetch a page that may be behind a protection screen (Cloudflare check, captcha). Tries a direct request, then a local FlareSolverr, then a paid solver for allow-listed domains, then a text-render fallback. Returns the page and which path worked.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Page URL" },
+        max_chars: { type: "number", description: "Trim output (default 20000)" },
+      },
+      required: ["url"],
     },
   },
   {
@@ -143,6 +156,10 @@ async function callTool(name, a = {}) {
         return okText(JSON.stringify(await wiki(a.query, { lang: a.lang ?? "ru" }), null, 2))
       case "free-hn":
         return okText(JSON.stringify(await hn(a.query, { limit: a.limit ?? 5 }), null, 2))
+      case "free-web-fetch": {
+        const r = await fetchWithFallback(a.url, { maxChars: a.max_chars ?? 20000 })
+        return okText(JSON.stringify({ via: r.via, status: r.status, error: r.error, body: r.body }, null, 2))
+      }
       case "free-web-extract": {
         const r = await extract(a.url, { maxLinks: a.max_links ?? 30 })
         return okText(JSON.stringify(r, null, 2))

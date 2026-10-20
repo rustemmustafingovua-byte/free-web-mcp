@@ -61,6 +61,17 @@ curl -s -X POST https://e1eaf1664c1d65.lhr.life/mcp \
 
 Health check: `https://e1eaf1664c1d65.lhr.life/health`
 
+### Two more tools (v0.3.0)
+
+| Tool | What it gives |
+|---|---|
+| `free-web-extract` | title, description, og-image and the page's links with anchor text — when the agent needs the links, not the whole page |
+| `free-web-feed` | RSS/Atom feeds as a plain list of items (title, link, date, summary) |
+
+```bash
+npx free-web-mcp   # then ask the agent for "the links from this page"
+```
+
 ## Install
 
 ```bash

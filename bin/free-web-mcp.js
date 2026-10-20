@@ -14,12 +14,12 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
-import { read, search, wiki, hn, github, SOURCES } from "../src/index.js"
+import { read, search, wiki, hn, github, extract, feed, SOURCES } from "../src/index.js"
 import { verifyPayment, paymentRequired } from "../src/x402.js"
 
 // --- CLI shell: --help / --version -------------------------------------------
 const HELP = "free-web-mcp — Web search and page reading for agents, with zero API credits.\n\nUSAGE\n  free-web-mcp                 run the MCP server on stdio\n  free-web-mcp serve           run an HTTP server (/mcp for MCP, /health for a status check)\n  free-web-mcp serve --price 0.001   charge 0.001 USDC per call on Base\n\nCOMMANDS / OPTIONS\n  serve          HTTP mode instead of the stdio MCP server\n  --port <n>     port for the HTTP server (default 8788)\n  --price <usd>  charge per call in USDC (x402, Base); the signature is verified\n\nEnvironment: JINA_API_KEY (optional, enables full web search), GITHUB_TOKEN (optional)\n\nMIT · https://github.com/rustemmustafingovua-byte"
-const VERSION = "0.2.0"
+const VERSION = "0.3.0"
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(HELP)
   process.exit(0)
@@ -79,6 +79,32 @@ const tools = [
     },
   },
   {
+    name: "free-web-extract",
+    description:
+      "Extract structured data from a page: title, description, og-image, and the links with their anchor text. Use it when you need the links of an article, not the whole text.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Page URL" },
+        max_links: { type: "number", description: "Maximum links to return (default 30)" },
+      },
+      required: ["url"],
+    },
+  },
+  {
+    name: "free-web-feed",
+    description:
+      "Read an RSS or Atom feed and return its items (title, link, date, summary). Use it for news, blogs and changelogs.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Feed URL" },
+        limit: { type: "number", description: "Maximum items (default 20)" },
+      },
+      required: ["url"],
+    },
+  },
+  {
     name: "free-github",
     description: "Search GitHub repositories, code and issues — free (uses GITHUB_TOKEN when present).",
     inputSchema: {
@@ -117,6 +143,14 @@ async function callTool(name, a = {}) {
         return okText(JSON.stringify(await wiki(a.query, { lang: a.lang ?? "ru" }), null, 2))
       case "free-hn":
         return okText(JSON.stringify(await hn(a.query, { limit: a.limit ?? 5 }), null, 2))
+      case "free-web-extract": {
+        const r = await extract(a.url, { maxLinks: a.max_links ?? 30 })
+        return okText(JSON.stringify(r, null, 2))
+      }
+      case "free-web-feed": {
+        const r = await feed(a.url, { limit: a.limit ?? 20 })
+        return okText(JSON.stringify(r, null, 2))
+      }
       case "free-github":
         return okText(
           JSON.stringify(

@@ -1,7 +1,7 @@
 {
   "name": "free-web-mcp",
-  "version": "0.1.0",
-  "description": "Web search and page reading for AI agents with zero API credits \u2014 r.jina.ai, Wikipedia, Hacker News and GitHub behind one MCP server.",
+  "version": "0.2.0",
+  "description": "Web search and page reading for AI agents with zero API credits — now also a public streamable-HTTP MCP endpoint",
   "type": "module",
   "license": "MIT",
   "bin": {

@@ -105,12 +105,12 @@ curl -s localhost:8788 -X POST -d '{"query":"opencode"}' -H 'content-type: appli
 The service is running publicly, no key and no credits:
 
 ```bash
-curl https://d46e34262da11b.lhr.life/health
-curl -X POST https://d46e34262da11b.lhr.life -H 'content-type: application/json' -d '{"query":"open source agent tools","source":"github"}'
+curl https://2f2a39c626f685.lhr.life/health
+curl -X POST https://2f2a39c626f685.lhr.life -H 'content-type: application/json' -d '{"query":"open source agent tools","source":"github"}'
 ```
 
 ```
-https://d46e34262da11b.lhr.life
+https://2f2a39c626f685.lhr.life
 ```
 
 > The tunnel URL rotates when the service restarts. To run it yourself:

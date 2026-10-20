@@ -1,22 +1,47 @@
 # Contributing
 
-## Scope
+Thanks for helping make agent setups work.
 
-The library is small on purpose: one protocol client, one policy, one CLI.
+## Ground rules
 
 - plain JavaScript, ESM, no build step
-- `viem` is the only runtime dependency
-- every change needs a test (`npm test`)
+- no runtime dependencies unless the tool genuinely needs them
+- every behaviour change comes with a test
+- comments explain **why**, not **what**
 
-## Adding a network
+## Getting set up
 
-1. implement the payment scheme for that network in `src/`
-2. extend `pickOption()` to select it
-3. add a test that covers the new option
-4. document it in the README table
+```bash
+git clone https://github.com/rustemmustafingovua-byte/free-web-mcp.git
+cd free-web-mcp
+npm install
+npm test
+```
+
+## Adding a provider / source / rule
+
+Most of these tools are one declarative file plus a router:
+
+| Tool | Where the data lives |
+|---|---|
+| opencode-free-stack | `src/providers.js` |
+| free-web-mcp | `src/index.js` (one function per source) |
+| agent-x402 | `src/x402.js` (protocol) + `src/policy.js` (limits) |
+| prompt-injection-guard | `PATTERNS` in `src/index.js` |
+| readme-doctor | `CHECKS` in `src/index.js` |
+
+Adding an entry should not require touching any other file.
+
+## Pull requests
+
+1. open an issue first for anything larger than a fix
+2. keep the diff focused
+3. make sure `npm test` and `npm run lint` pass
+4. describe what changes for the user, not how the code works
 
 ## Bounties
 
-Issues labelled `💰 Reward` can be funded by anyone with `/reward <amount>`
-(Opire) or via Algora. The money is paid to the merged PR, not to the repo
-owner.
+Issues labelled 💰 Reward can be funded by anyone with `/reward <amount>` (Opire) or
+via [Algora](https://algora.io). The money is paid to the person whose PR gets
+merged — never to the repo owner. That is the point: it buys contributors,
+reviews and attention.

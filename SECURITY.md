@@ -2,17 +2,19 @@
 
 ## Reporting a vulnerability
 
-Use **Security → Report a vulnerability** on GitHub. Do not open a public
-issue for a suspected flaw in the signing or policy code.
+Use **Security → Report a vulnerability** on GitHub. Please do not open a public
+issue for a suspected flaw in the security-relevant code.
 
-## Trust model
+## What this tool handles
 
-This package holds a private key and signs USDC payments. Treat it as a hot
-wallet.
+This tool reads local files or calls public APIs. It does not execute the content it reads.
 
-- the private key lives only in the process that signs; it is never logged, never written by the library, and never included in an error
-- a `SpendPolicy` is enforced **before** signing — daily cap, per-request cap, payment count, payee allow-list, blocked contracts, per-network cap
-- the policy is the boundary: a model that can call the tool still cannot raise a cap
-- use a dedicated wallet with only the funds it needs
+- no credentials are written to disk by the tool
+- keys come from the environment and are forwarded to the service that needs them
+- output from fetched pages is untrusted data, never instructions
 
-`x402` payments are irreversible on-chain. Test on a small amount first.
+## Supported versions
+
+| Version | Supported |
+|---|---|
+| 0.1.x | ✅ |

@@ -39,3 +39,44 @@ test("the 402 carries the payment terms", () => {
   assert.equal(decoded.accepts[0].amount, "1000")
   assert.equal(decoded.accepts[0].network, "eip155:8453")
 })
+
+
+test("free-тир: лимит запросов в час с одного IP и 402 после него", async () => {
+  const { createServer } = await import("node:http")
+  // поднимаем такой же сервер, как в проде, но с лимитом 2
+  const { spawn } = await import("node:child_process")
+  const port = 8931
+  const proc = spawn(
+    "node",
+    ["bin/free-web-mcp.js", "serve", "--port", String(port)],
+    { env: { ...process.env, FREE_TIER_PER_HOUR: "2", X402_PRICE_USD: "0.001" }, stdio: "ignore" },
+  )
+  // ждём, пока сервер поднимется
+  for (let i = 0; i < 40; i++) {
+    await new Promise((r) => setTimeout(r, 200))
+    try {
+      const h = await fetch(`http://127.0.0.1:${port}/health`)
+      if (h.ok) break
+    } catch {}
+  }
+  try {
+    const call = async (path, headers = {}) => {
+      const res = await fetch(`http://127.0.0.1:${port}${path}`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "accept": "application/json, text/event-stream", ...headers },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+      })
+      return res
+    }
+    const a = await call("/mcp")
+    const b = await call("/mcp")
+    const c = await call("/mcp")
+    assert.equal(a.status, 200, "первый запрос — бесплатно")
+    assert.equal(b.status, 200, "второй запрос — бесплатно")
+    assert.equal(c.status, 402, "третий запрос — уже платный")
+    const paid = await call("/mcp/paid")
+    assert.equal(paid.status, 402, "платный путь всегда требует оплаты")
+  } finally {
+    proc.kill()
+  }
+})

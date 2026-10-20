@@ -32,6 +32,27 @@ if (process.argv.includes("--version") || process.argv.includes("-V")) {
 const jinaKey = process.env.JINA_API_KEY || ""
 const githubToken = process.env.GITHUB_TOKEN || ""
 
+/** Free-тир: сколько запросов в час с одного IP без оплаты. */
+const FREE_TIER_PER_HOUR = Number(process.env.FREE_TIER_PER_HOUR ?? "30")
+/** Сколько стоит один запрос при оплате, USD. */
+const PRICE_USD = Number(process.env.X402_PRICE_USD ?? "0.001")
+
+/** Счётчик бесплатных запросов: ip → { час, счётчик }. */
+const freeTier = new Map()
+
+/** Списать бесплатный запрос; вернуть false, если лимит исчерпан. */
+function takeFreeTier(ip) {
+  const hour = Math.floor(Date.now() / 3600_000)
+  const row = freeTier.get(ip)
+  if (!row || row.hour !== hour) {
+    freeTier.set(ip, { hour, count: 1 })
+    return true
+  }
+  if (row.count >= FREE_TIER_PER_HOUR) return false
+  row.count += 1
+  return true
+}
+
 const tools = [
   {
     name: "free-web-read",
@@ -202,7 +223,8 @@ async function main() {
   const argv = process.argv.slice(2)
   if (argv[0] === "serve") {
     const priceIdx = argv.indexOf("--price")
-    const price = priceIdx >= 0 ? Number(argv[priceIdx + 1]) : 0
+    // цена: флаг --price или переменная X402_PRICE_USD
+    const price = priceIdx >= 0 ? Number(argv[priceIdx + 1]) : Number(process.env.X402_PRICE_USD ?? 0)
     const port = Number(argv[argv.indexOf("--port") + 1] || 8788)
     const http = createServer(async (req, res) => {
       res.setHeader("Access-Control-Allow-Origin", "*")
@@ -211,7 +233,16 @@ async function main() {
       if (req.method === "OPTIONS") return res.writeHead(204).end()
       if (req.method === "GET" && req.url === "/health") {
         res.writeHead(200, { "Content-Type": "application/json" })
-        return res.end(JSON.stringify({ ok: true, price, sources: SOURCES, version: VERSION }))
+        return res.end(
+          JSON.stringify({
+            ok: true,
+            price,
+            freeTierPerHour: FREE_TIER_PER_HOUR,
+            paidPath: "/mcp/paid",
+            sources: SOURCES,
+            version: VERSION,
+          }),
+        )
       }
 
       const chunks = []
@@ -227,25 +258,31 @@ async function main() {
       }
 
       if (price > 0) {
-        const sig = req.headers["payment-signature"] || req.headers["sign-in-with-x"] || req.headers["x-payment"]
-        const verdict = await verifyPayment(sig, { priceUsd: price })
-        if (!verdict.ok) {
-          const required = paymentRequired(price)
-          res.writeHead(required.status, required.headers)
-          return res.end(JSON.stringify(required.body))
-        }
-        // деньги реально забираем: без этого оплата осталась бы на руках плательщика
-        const collected = await collectPayment(sig)
-        if (collected.ok) {
-          process.stderr.write(`[free-web-mcp] оплата ${price} USDC собрана, tx ${collected.tx}\n`)
-        } else {
-          process.stderr.write(`[free-web-mcp] оплата не собрана: ${collected.reason}\n`)
+        // /mcp — free-тир с лимитом, /mcp/paid — всегда за оплату
+        const paidPath = (req.url || "").split("?")[0] === "/mcp/paid"
+        const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown"
+        const freeAllowed = !paidPath && takeFreeTier(ip)
+        if (!freeAllowed) {
+          const sig = req.headers["payment-signature"] || req.headers["sign-in-with-x"] || req.headers["x-payment"]
+          const verdict = await verifyPayment(sig, { priceUsd: price })
+          if (!verdict.ok) {
+            const required = paymentRequired(price)
+            res.writeHead(required.status, required.headers)
+            return res.end(JSON.stringify(required.body))
+          }
+          // деньги реально забираем: без этого оплата осталась бы на руках плательщика
+          const collected = await collectPayment(sig)
+          if (collected.ok) {
+            process.stderr.write(`[free-web-mcp] оплата ${price} USDC собрана, tx ${collected.tx}\n`)
+          } else {
+            process.stderr.write(`[free-web-mcp] оплата не собрана: ${collected.reason}\n`)
+          }
         }
       }
 
       // настоящий MCP по streamable HTTP
       const path = (req.url || "/").split("?")[0]
-      if (path === "/mcp") {
+      if (path === "/mcp" || path === "/mcp/paid") {
         const server = createMcpServer()
         const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
         res.on("close", () => {

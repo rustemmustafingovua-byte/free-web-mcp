@@ -32,6 +32,35 @@ Most "web search for agents" tools bill per call. For an agent that runs dozens 
 | GitHub | repos, code, issues | optional (`GITHUB_TOKEN`) |
 | Jina Search | full web search | optional free key |
 
+## Public MCP endpoint (no key, no credits)
+
+The server is live as a real streamable-HTTP MCP server:
+
+```jsonc
+{
+  "mcp": {
+    "free-web": {
+      "type": "remote",
+      "url": "https://48420f5263f10d.lhr.life/mcp",
+      "enabled": true
+    }
+  }
+}
+```
+
+It is also listed in the **official MCP Registry** as
+`io.github.rustemmustafingovua-byte/free-web-mcp`.
+
+```bash
+# проверка вручную
+curl -s -X POST https://48420f5263f10d.lhr.life/mcp \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"c","version":"1"}}}'
+```
+
+Health check: `https://48420f5263f10d.lhr.life/health`
+
 ## Install
 
 ```bash
@@ -114,7 +143,7 @@ https://48420f5263f10d.lhr.life
 ## CLI
 
 ```
-free-web-mcp — Web search and page reading for agents, with zero API credits.
+free-web-mcp — Web search and page reading for agents, with zero API credits. Public MCP endpoint included.
 
 USAGE
   free-web-mcp                 run the MCP server on stdio

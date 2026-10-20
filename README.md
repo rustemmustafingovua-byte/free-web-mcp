@@ -41,7 +41,7 @@ The server is live as a real streamable-HTTP MCP server:
   "mcp": {
     "free-web": {
       "type": "remote",
-      "url": "https://90753b5c405218.lhr.life/mcp",
+      "url": "https://a2aeb7ee660fe8.lhr.life/mcp",
       "enabled": true
     }
   }
@@ -53,13 +53,13 @@ It is also listed in the **official MCP Registry** as
 
 ```bash
 # проверка вручную
-curl -s -X POST https://90753b5c405218.lhr.life/mcp \
+curl -s -X POST https://a2aeb7ee660fe8.lhr.life/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"c","version":"1"}}}'
 ```
 
-Health check: `https://90753b5c405218.lhr.life/health`
+Health check: `https://a2aeb7ee660fe8.lhr.life/health`
 
 ## Install
 
@@ -122,12 +122,12 @@ curl -s localhost:8788 -X POST -d '{"query":"opencode"}' -H 'content-type: appli
 The service is running publicly, no key and no credits:
 
 ```bash
-curl https://90753b5c405218.lhr.life/health
-curl -X POST https://90753b5c405218.lhr.life -H 'content-type: application/json' -d '{"query":"open source agent tools","source":"github"}'
+curl https://a2aeb7ee660fe8.lhr.life/health
+curl -X POST https://a2aeb7ee660fe8.lhr.life -H 'content-type: application/json' -d '{"query":"open source agent tools","source":"github"}'
 ```
 
 ```
-https://90753b5c405218.lhr.life
+https://a2aeb7ee660fe8.lhr.life
 ```
 
 > The tunnel URL rotates when the service restarts. To run it yourself:

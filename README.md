@@ -87,6 +87,28 @@ Full survey of the options and the policy: [docs/CAPTCHA.md](docs/CAPTCHA.md).
 npx free-web-mcp   # then ask the agent for "the links from this page"
 ```
 
+### Free tier and paid tier (v0.4.0)
+
+The hosted service works in two modes:
+
+| Path | Price |
+|---|---|
+| `/mcp` | free — 30 requests per hour per IP (`FREE_TIER_PER_HOUR`) |
+| `/mcp/paid` | 0.001 USDC per call on Base, paid with x402 (no account, no key) |
+
+Payments are **actually collected**: the server verifies the EIP-3009
+`transferWithAuthorization` signature and submits it on-chain, so the USDC
+really moves to the project wallet. The collection transaction is paid for from
+`X402_GAS_KEY` (a small amount of ETH on Base is needed for gas).
+
+```bash
+export X402_PRICE_USD=0.001
+export X402_GAS_KEY=0x…        # wallet that pays gas for collecting
+```
+
+Clients pay the way the x402 standard says: request → 402 with the payment
+terms → sign → retry with the `PAYMENT-SIGNATURE` header.
+
 ## Install
 
 ```bash

@@ -76,6 +76,13 @@ export FREE_WEB_ALLOWLIST=example.com            # who the paid path may touch
 
 Full survey of the options and the policy: [docs/CAPTCHA.md](docs/CAPTCHA.md).
 
+### Discovery tools (v0.6.0)
+
+| Tool | What it gives |
+|---|---|
+| `free-web-sitemap` | all URLs of a site from its sitemap.xml — what the site actually contains, before fetching pages one by one |
+| `free-web-structured` | schema.org / JSON-LD from a page: type, name, price, currency, rating, sku |
+
 ### Two more tools (v0.3.0)
 
 | Tool | What it gives |

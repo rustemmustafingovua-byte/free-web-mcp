@@ -41,7 +41,7 @@ The server is live as a real streamable-HTTP MCP server:
   "mcp": {
     "free-web": {
       "type": "remote",
-      "url": "https://8c5a4c9e59094b.lhr.life/mcp",
+      "url": "https://kjnmv-85-114-207-24.free.pinggy.net/mcp",
       "enabled": true
     }
   }
@@ -53,13 +53,13 @@ It is also listed in the **official MCP Registry** as
 
 ```bash
 # проверка вручную
-curl -s -X POST https://8c5a4c9e59094b.lhr.life/mcp \
+curl -s -X POST https://kjnmv-85-114-207-24.free.pinggy.net/mcp \
   -H "Content-Type: application/json" \
   -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"c","version":"1"}}}'
 ```
 
-Health check: `https://8c5a4c9e59094b.lhr.life/health`
+Health check: `https://kjnmv-85-114-207-24.free.pinggy.net/health`
 
 ### Getting past protection screens (v0.4.0)
 
@@ -221,12 +221,12 @@ curl -s localhost:8788 -X POST -d '{"query":"opencode"}' -H 'content-type: appli
 The service is running publicly, no key and no credits:
 
 ```bash
-curl https://8c5a4c9e59094b.lhr.life/health
-curl -X POST https://8c5a4c9e59094b.lhr.life -H 'content-type: application/json' -d '{"query":"open source agent tools","source":"github"}'
+curl https://kjnmv-85-114-207-24.free.pinggy.net/health
+curl -X POST https://kjnmv-85-114-207-24.free.pinggy.net -H 'content-type: application/json' -d '{"query":"open source agent tools","source":"github"}'
 ```
 
 ```
-https://8c5a4c9e59094b.lhr.life
+https://kjnmv-85-114-207-24.free.pinggy.net
 ```
 
 > The tunnel URL rotates when the service restarts. To run it yourself:

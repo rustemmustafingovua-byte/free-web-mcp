@@ -4,7 +4,7 @@
  *
  *   free-web-mcp                 run the MCP server on stdio (for OpenCode / Claude Code)
  *   free-web-mcp serve           run an HTTP server: /mcp (MCP) + /health + a plain JSON API
- *   free-web-mcp serve --price 0.001   charge 0.001 USDC per call on Base (x402, signature verified)
+ *   free-web-mcp serve --price 0.001   charge per call: 0.001 USDC or native ETH on Base (x402, signature verified)
  */
 import { createServer } from "node:http"
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
@@ -20,7 +20,7 @@ import { ethUsd } from "../src/price.js"
 import { verifyPayment, paymentRequired, collectPayment, verifyDirectPayment } from "../src/x402.js"
 
 // --- CLI shell: --help / --version -------------------------------------------
-const HELP = "free-web-mcp — Web search and page reading for agents, with zero API credits.\n\nUSAGE\n  free-web-mcp                 run the MCP server on stdio\n  free-web-mcp serve           run an HTTP server (/mcp for MCP, /health for a status check)\n  free-web-mcp serve --price 0.001   charge 0.001 USDC per call on Base\n\nCOMMANDS / OPTIONS\n  serve          HTTP mode instead of the stdio MCP server\n  --port <n>     port for the HTTP server (default 8788)\n  --price <usd>  charge per call in USDC (x402, Base); the signature is verified\n\nEnvironment: JINA_API_KEY (optional, enables full web search), GITHUB_TOKEN (optional)\n\nMIT · https://github.com/rustemmustafingovua-byte"
+const HELP = "free-web-mcp — Web search and page reading for agents, with zero API credits.\n\nUSAGE\n  free-web-mcp                 run the MCP server on stdio\n  free-web-mcp serve           run an HTTP server (/mcp for MCP, /health for a status check)\n  free-web-mcp serve --price 0.001   charge per call: 0.001 USDC or native ETH on Base\n\nCOMMANDS / OPTIONS\n  serve          HTTP mode instead of the stdio MCP server\n  --port <n>     port for the HTTP server (default 8788)\n  --price <usd>  charge per call (x402, Base): 0.001 USDC or the same in native ETH\n\nEnvironment: JINA_API_KEY (optional, enables full web search), GITHUB_TOKEN (optional)\n\nMIT · https://github.com/rustemmustafingovua-byte"
 const VERSION = "0.7.0"
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(HELP)

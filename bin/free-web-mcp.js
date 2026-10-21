@@ -15,6 +15,8 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
 import { read, search, wiki, hn, github, extract, feed, fetchWithFallback, sitemap, structured, findLlms, tables, SOURCES } from "../src/index.js"
+import { verifyNativePayment } from "../src/x402.js"
+import { ethUsd } from "../src/price.js"
 import { verifyPayment, paymentRequired, collectPayment, verifyDirectPayment } from "../src/x402.js"
 
 // --- CLI shell: --help / --version -------------------------------------------
@@ -333,20 +335,29 @@ async function main() {
           // 1) клиент перевёл сам и прислал хеш — сервер только проверяет (газ платит клиент)
           const txHash = req.headers["x-payment-tx"]
           if (txHash) {
+            // сначала пробуем нативный ETH: перевод прямо на наш кошелёк
+            const rate = await ethUsd().catch(() => 0)
+            const native = await verifyNativePayment(txHash, { priceUsd: price, ethUsd: rate })
+            if (native.ok) {
+              process.stderr.write(
+                `[free-web-mcp] оплата ${native.amountWei} wei собрана нативным ETH, tx ${txHash}\n`,
+              )
+            } else {
             const direct = await verifyDirectPayment(txHash, { priceUsd: price })
             if (direct.ok) {
               process.stderr.write(`[free-web-mcp] оплата ${price} USDC получена, tx ${txHash}\n`)
             } else {
-              const required = paymentRequired(price)
+              const required = paymentRequired(price, { ethUsd: rate })
               res.writeHead(required.status, required.headers)
               return res.end(JSON.stringify({ ...required.body, reason: direct.reason }))
+            }
             }
           } else {
             // 2) клиент подписал EIP-3009 (сервер собирает сам — нужен газ)
             const sig = req.headers["payment-signature"] || req.headers["sign-in-with-x"] || req.headers["x-payment"]
             const verdict = await verifyPayment(sig, { priceUsd: price })
             if (!verdict.ok) {
-              const required = paymentRequired(price)
+              const required = paymentRequired(price, { ethUsd: await ethUsd().catch(() => 0) })
               res.writeHead(required.status, required.headers)
               return res.end(JSON.stringify(required.body))
             }

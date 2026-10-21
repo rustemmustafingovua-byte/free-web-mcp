@@ -76,6 +76,25 @@ export FREE_WEB_ALLOWLIST=example.com            # who the paid path may touch
 
 Full survey of the options and the policy: [docs/CAPTCHA.md](docs/CAPTCHA.md).
 
+### Pay with ETH, not only USDC (v0.7.0)
+
+The hosted endpoint takes payment in **native ETH on Base** as well as USDC. The
+402 response lists both options with exact amounts, and the server verifies the
+transaction on-chain (the payer pays the gas, the server needs nothing).
+
+```
+→ 402 {
+    "ways": [
+      { "kind": "transfer-and-prove",  "asset": "USDC", "amount": "1000" },
+      { "kind": "native-eth-transfer", "asset": "ETH",  "amount": "500000000000" }
+    ]
+  }
+```
+
+The ETH price comes from a public API without a key, cached for a minute, with a
+conservative fallback. Everything lands in one wallet: the payment, the gas and
+the Lumen deployment.
+
 ### Discovery tools (v0.6.0)
 
 | Tool | What it gives |

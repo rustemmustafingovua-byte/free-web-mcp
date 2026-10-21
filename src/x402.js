@@ -34,6 +34,47 @@ const client = createPublicClient({ chain: base, transport: http() })
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 
 /**
+ * Проверка оплаты нативным ETH: клиент просто переводит ETH на кошелёк
+ * получателя и присылает хеш транзакции.
+ *
+ * Нужен, чтобы доход приходил прямо в эфире, а не в стейблкоине: газ на Base
+ * тоже в эфире, так что весь денежный контур остаётся в одном активе.
+ */
+export async function verifyNativePayment(txHash, { priceUsd, payTo = PAY_TO, ethUsd = 0, fetchImpl = fetch } = {}) {
+  if (!/^0x[0-9a-f]{64}$/i.test(String(txHash ?? ""))) {
+    return { ok: false, reason: "missing or malformed transaction hash" }
+  }
+  try {
+    const res = await fetchImpl(process.env.BASE_RPC || "https://mainnet.base.org", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_getTransactionByHash",
+        params: [txHash],
+      }),
+      signal: AbortSignal.timeout(15000),
+    })
+    const j = await res.json()
+    const tx = j?.result
+    if (!tx) return { ok: false, reason: "transaction not found" }
+    if (!tx.to || tx.to.toLowerCase() !== String(payTo).toLowerCase()) {
+      return { ok: false, reason: "transaction does not pay the payee" }
+    }
+    const valueWei = BigInt(tx.value ?? "0x0")
+    if (valueWei === 0n) return { ok: false, reason: "zero value" }
+    const paidUsd = ethUsd ? (Number(valueWei) / 1e18) * ethUsd : 0
+    if (ethUsd && paidUsd + 1e-12 < priceUsd) {
+      return { ok: false, reason: `paid $${paidUsd.toFixed(6)}, need $${priceUsd}` }
+    }
+    return { ok: true, amountWei: valueWei, amountUsd: paidUsd, asset: "ETH", tx: txHash }
+  } catch (e) {
+    return { ok: false, reason: e?.shortMessage ?? e?.message ?? String(e) }
+  }
+}
+
+/**
  * Проверка прямой оплаты: клиент сам переводит USDC на кошелёк получателя
  * и присылает хеш транзакции.
  *
@@ -161,8 +202,9 @@ export async function collectPayment(raw, { payTo = PAY_TO, privateKey } = {}) {
 }
 
 /** The 402 a client should receive, with the accepted payment options. */
-export function paymentRequired(priceUsd, { payTo = PAY_TO, asset = USDC_BASE } = {}) {
+export function paymentRequired(priceUsd, { payTo = PAY_TO, asset = USDC_BASE, ethUsd = 0 } = {}) {
   const amount = String(Math.round(priceUsd * 1e6))
+  const ethAmountWei = ethUsd ? String(BigInt(Math.ceil((priceUsd / ethUsd) * 1e18))) : null
   const requirements = {
     x402Version: 2,
     accepts: [
@@ -204,6 +246,18 @@ export function paymentRequired(priceUsd, { payTo = PAY_TO, asset = USDC_BASE } 
           amount,
           network: "base",
         },
+        ...(ethAmountWei
+          ? [
+              {
+                kind: "native-eth-transfer",
+                note: "send ETH to payTo on Base, then repeat the request with header X-PAYMENT-TX: <tx hash>",
+                asset: "ETH",
+                payTo,
+                amount: ethAmountWei,
+                network: "base",
+              },
+            ]
+          : []),
       ],
     },
   }

@@ -128,11 +128,12 @@ export async function search(query, opts = {}) {
   return out
 }
 
-export const version = "0.6.0"
+export const version = "0.7.0"
 
 export { verifyPayment, paymentRequired, decodePaymentHeader, PAY_TO, USDC_BASE } from "./x402.js"
 export { extract, feed, extractFromHtml, parseFeed, toAbsolute, decodeEntities } from "./extract.js"
 export { sitemap, structured, parseSitemap, extractJsonLd } from "./discover.js"
+export { findLlms, parseLlmsTxt, extractTables, tables } from "./llms.js"
 export {
   fetchWithFallback,
   looksLikeChallenge,

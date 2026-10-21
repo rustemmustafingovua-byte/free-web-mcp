@@ -14,12 +14,12 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js"
-import { read, search, wiki, hn, github, extract, feed, fetchWithFallback, sitemap, structured, SOURCES } from "../src/index.js"
+import { read, search, wiki, hn, github, extract, feed, fetchWithFallback, sitemap, structured, findLlms, tables, SOURCES } from "../src/index.js"
 import { verifyPayment, paymentRequired, collectPayment, verifyDirectPayment } from "../src/x402.js"
 
 // --- CLI shell: --help / --version -------------------------------------------
 const HELP = "free-web-mcp — Web search and page reading for agents, with zero API credits.\n\nUSAGE\n  free-web-mcp                 run the MCP server on stdio\n  free-web-mcp serve           run an HTTP server (/mcp for MCP, /health for a status check)\n  free-web-mcp serve --price 0.001   charge 0.001 USDC per call on Base\n\nCOMMANDS / OPTIONS\n  serve          HTTP mode instead of the stdio MCP server\n  --port <n>     port for the HTTP server (default 8788)\n  --price <usd>  charge per call in USDC (x402, Base); the signature is verified\n\nEnvironment: JINA_API_KEY (optional, enables full web search), GITHUB_TOKEN (optional)\n\nMIT · https://github.com/rustemmustafingovua-byte"
-const VERSION = "0.6.0"
+const VERSION = "0.7.0"
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(HELP)
   process.exit(0)
@@ -109,6 +109,30 @@ const tools = [
       properties: {
         url: { type: "string", description: "Page URL" },
         max_chars: { type: "number", description: "Trim output (default 20000)" },
+      },
+      required: ["url"],
+    },
+  },
+  {
+    name: "free-web-llms",
+    description:
+      "Find the machine-readable documentation of a site (llms.txt): the list of pages with descriptions, grouped by section. Use it before reading a documentation site page by page.",
+    inputSchema: {
+      type: "object",
+      properties: { url: { type: "string", description: "Site URL, e.g. https://example.com" } },
+      required: ["url"],
+    },
+  },
+  {
+    name: "free-web-tables",
+    description:
+      "Extract tables from a page as headers and rows: pricing, specs, comparison tables. Use it instead of reading the whole page when you only need the table.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Page URL" },
+        max_tables: { type: "number", description: "Maximum tables (default 10)" },
+        max_rows: { type: "number", description: "Maximum rows per table (default 50)" },
       },
       required: ["url"],
     },
@@ -207,6 +231,14 @@ async function callTool(name, a = {}) {
       case "free-web-fetch": {
         const r = await fetchWithFallback(a.url, { maxChars: a.max_chars ?? 20000 })
         return okText(JSON.stringify({ via: r.via, status: r.status, error: r.error, body: r.body }, null, 2))
+      }
+      case "free-web-llms": {
+        const r = await findLlms(a.url)
+        return okText(JSON.stringify(r, null, 2))
+      }
+      case "free-web-tables": {
+        const r = await tables(a.url, { maxTables: a.max_tables ?? 10, maxRows: a.max_rows ?? 50 })
+        return okText(JSON.stringify(r, null, 2))
       }
       case "free-web-sitemap": {
         const r = await sitemap(a.url, { limit: a.limit ?? 200 })

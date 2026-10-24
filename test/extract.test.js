@@ -95,3 +95,19 @@ test("feed: лимит items соблюдается", () => {
   const many = RSS.replace("</channel>", Array.from({ length: 10 }, (_, i) => `<item><title>П${i}</title><link>https://e.com/${i}</link></item>`).join("") + "</channel>")
   assert.equal(parseFeed(many, { limit: 3 }).count, 3)
 })
+import { readFileSync, existsSync } from "node:fs"
+import { join } from "node:path"
+import { fileURLToPath } from "node:url"
+
+const ROOT = fileURLToPath(new URL("..", import.meta.url))
+
+test("self-hosting guide documents tunnel, systemd unit, reverse proxy, x402 pricing, and docker run", () => {
+  const docPath = join(ROOT, "docs", "SELF-HOSTING.md")
+  assert.equal(existsSync(docPath), true)
+  const doc = readFileSync(docPath, "utf8")
+  assert.match(doc, /cloudflared tunnel|ngrok/i)
+  assert.match(doc, /\[Unit\][\s\S]*\[Service\][\s\S]*ExecStart=/i)
+  assert.match(doc, /reverse_proxy|proxy_pass/i)
+  assert.match(doc, /x402/i)
+  assert.match(doc, /docker run/i)
+})

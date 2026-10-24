@@ -297,3 +297,12 @@ Paid tiers of the hosted services are billed per call in USDC (x402) — no acco
 ## License
 
 MIT © rustemmustafingovua-byte
+
+## Self-Hosting with a Public URL in 10 Minutes
+
+See **[docs/SELF-HOSTING.md](docs/SELF-HOSTING.md)** for the complete guide covering:
+- **`docker run`** one-liner (`docker run -d -p 127.0.0.1:8788:8788 free-web-mcp`)
+- **`systemd` unit** (`/etc/systemd/system/free-web-mcp.service`)
+- **Tunnels** (`cloudflared tunnel --url http://127.0.0.1:8788` / `ngrok http 8788`)
+- **Reverse proxies** (Caddy & Nginx with streaming enabled)
+- **`x402` per-call pricing** (`$0.0005`–`$0.001` USDC on Base/Solana via `402 Payment Required`)

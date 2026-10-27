@@ -49,7 +49,7 @@
   },
   "homepage": "https://github.com/rustemmustafingovua-byte/free-web-mcp#readme",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "viem": "^2.57.0"
   }
 }

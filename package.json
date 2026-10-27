@@ -50,6 +50,6 @@
   "homepage": "https://github.com/rustemmustafingovua-byte/free-web-mcp#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "viem": "^2.57.0"
+    "viem": "^2.57.11"
   }
 }
